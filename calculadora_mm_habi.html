@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora MM – Habi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      width: 100%;
+      max-width: 1020px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: #7B2FD9;
+      color: #fff;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .card-header .logo { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #e0c8ff; }
+    .card-header h1   { font-size: 20px; font-weight: 700; }
+    .card-header p    { font-size: 12px; color: #c9b0ff; margin-left: auto; }
+
+    /* Two-column body */
+    .card-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .col {
+      padding: 20px 24px;
+    }
+
+    .col-left  { border-right: 1.5px solid #f0f2f7; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #aaa;
+      margin-bottom: 10px;
+      margin-top: 18px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .field { margin-bottom: 10px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 4px;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-wrap .prefix {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #888;
+      font-weight: 600;
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 9px 10px 9px 26px;
+      border: 1.5px solid #dde1ea;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1a1a2e;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafbfd;
+    }
+    input[type="text"]:focus { border-color: #7B2FD9; background: #fff; }
+    input[type="text"].readonly { background: #f0f2f7; color: #555; cursor: default; }
+
+    .auto-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      background: #ede0ff;
+      color: #7B2FD9;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    .tag-adjusted {
+      display: inline-block;
+      background: #fff3cd;
+      color: #856404;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 5px;
+    }
+
+    /* Letras copiables */
+    .letras-box {
+      display: none;
+      margin-top: 5px;
+      border: 1.5px solid #c9b0f5;
+      border-radius: 7px;
+      background: #f5f0ff;
+      overflow: hidden;
+    }
+    .letras-box.show { display: block; }
+    .letras-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #7B2FD9;
+      padding: 4px 8px 1px;
+    }
+    .letras-row { display: flex; align-items: stretch; }
+    .letras-text {
+      flex: 1;
+      font-size: 11px;
+      font-weight: 600;
+      color: #3a1a6e;
+      padding: 2px 8px 6px;
+      line-height: 1.5;
+      word-break: break-word;
+      cursor: text;
+      user-select: all;
+    }
+    .copy-btns { display: flex; flex-direction: column; flex-shrink: 0; }
+    .btn-copy, .btn-copy-num {
+      flex-shrink: 0;
+      color: #fff;
+      border: none;
+      padding: 0 9px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      flex: 1;
+      white-space: nowrap;
+    }
+    .btn-copy     { background: #7B2FD9; }
+    .btn-copy-num { background: #4a5568; border-top: 1px solid rgba(255,255,255,0.15); }
+    .btn-copy:hover     { background: #6320c0; }
+    .btn-copy-num:hover { background: #2d3748; }
+    .btn-copy.copied, .btn-copy-num.copied { background: #27ae60; }
+
+    /* Toggle */
+    .toggle-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fc;
+      border: 1.5px solid #dde1ea;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+    }
+    .toggle-text { font-size: 12px; font-weight: 600; color: #333; line-height: 1.3; }
+    .toggle-sub  { font-size: 10px; color: #999; margin-top: 1px; }
+
+    .toggle-switch {
+      display: flex;
+      background: #e8eaf0;
+      border-radius: 7px;
+      padding: 2px;
+      gap: 2px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+    .toggle-switch button {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: transparent;
+      color: #888;
+      transition: all 0.2s;
+    }
+    .toggle-switch button.active-yes { background: #e74c3c; color: #fff; box-shadow: 0 2px 5px rgba(231,76,60,0.25); }
+    .toggle-switch button.active-no  { background: #27ae60; color: #fff; box-shadow: 0 2px 5px rgba(39,174,96,0.25); }
+
+    .condicion-aviso {
+      display: none;
+      margin-bottom: 6px;
+      background: #fff0f0;
+      border: 1.5px solid #e74c3c;
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 11.5px;
+      color: #8b1a1a;
+      line-height: 1.4;
+    }
+    .condicion-aviso.show { display: block; }
+
+    /* Result rows */
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f2f7;
+    }
+    .result-row:last-child { border-bottom: none; }
+
+    .result-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-row .rlabel { font-size: 12px; color: #666; }
+    .result-row .rvalue { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+    .result-row .rvalue.deducted { color: #e74c3c; }
+    .result-row .rvalue.zero     { color: #ccc; }
+
+    .rletras {
+      font-size: 10px;
+      color: #999;
+      font-style: italic;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+    .rletras.deducted { color: #c0392b; opacity: 0.75; }
+
+    .result-final {
+      background: #7B2FD9;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+    .result-final-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-final .rlabel { font-size: 13px; font-weight: 600; color: #d9c4ff; }
+    .result-final .rvalue { font-size: 18px; font-weight: 800; color: #fff; }
+    .result-final .rletras { color: #c9b0ff; font-style: italic; font-size: 10px; margin-top: 4px; }
+
+    /* Alerts */
+    .alert {
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      display: none;
+    }
+    .alert.show { display: block; }
+    .alert-warning { background: #fff8e1; border: 1.5px solid #f9ca24; color: #7d6000; }
+    .alert-danger  { background: #fdecea; border: 1.5px solid #e74c3c; color: #8b1a1a; }
+    .alert-info    { background: #e8f8f1; border: 1.5px solid #27ae60; color: #1a6b3a; }
+    .alert strong  { font-weight: 700; }
+
+    footer {
+      text-align: center;
+      font-size: 10px;
+      color: #ccc;
+      padding: 10px 28px 14px;
+      border-top: 1px solid #f0f2f7;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="logo">Habi</div>
+      <h1>Calculadora MM</h1>
+    </div>
+    <p>Política de Negocios Inmobiliarios 2026</p>
+  </div>
+
+  <div class="card-body">
+    <!-- COLUMNA IZQUIERDA: Inputs -->
+    <div class="col col-left">
+      <div class="section-label">Datos del negocio</div>
+
+      <div class="field">
+        <label>Precio del inmueble</label>
+        <div class="input-wrap">
+          <span class="prefix">$</span>
+          <input type="text" id="precio" placeholder="0" oninput="formatAndCalc(this)" onfocus="onFocus(this)" onblur="onBlur(this)" />
+        </div>
+        <div class="letras-box" id="letras-precio">
+          <div class="letras-label">En letras</div>
+          <div class="letras-row">
+            <span style="display:none" id="num-precio"></span>
+            <div class="letras-text" id="txt-precio"></div>
+            <div class="copy-btns">
+              <button class="btn-copy-num" onclick="copiar('num-precio', this)">🔢 Número</button>
+              <button class="btn-copy" onclick="copiar('txt-precio', this)">📋 Letras</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>
+          Arras <span class="auto-badge">Auto · 10%</span>
+          <span id="arras-ajustada-badge" class="tag-adjusted" style="display:none;">Ajustada</span>
+        </label>
+        <div class="input-wrap">
+          <span class="prefix">$</span>
+          <input type="text" id="arras" class="readonly" readonly placeholder="0" />
+        </div>
+        <div class="letras-box" id="letras-arras">
+          <div class="letras-label">En letras</div>
+          <div class="letras-row">
+            <span style="display:none" id="num-arras"></span>
+            <div class="letras-text" id="txt-arras"></div>
+            <div class="copy-btns">
+              <button class="btn-copy-num" onclick="copiar('num-arras', this)">🔢 Número</button>
+              <button class="btn-copy" onclick="copiar('txt-arras', this)">📋 Letras</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" id="field-deposito" style="display:none;">
+        <label>
+          Depósito <span class="auto-badge" style="background:#fde8cc; color:#b35a00;">Auto · 15%</span>
+        </label>
+        <div class="input-wrap">
+          <span class="prefix">$</span>
+          <input type="text" id="deposito" class="readonly" readonly placeholder="0" style="border-color:#f39c12; background:#fffaf4;" />
+        </div>
+        <div class="letras-box" id="letras-deposito" style="border-color:#f5c070; background:#fffbf0;">
+          <div class="letras-label" style="color:#b35a00;">En letras</div>
+          <div class="letras-row">
+            <span style="display:none" id="num-deposito"></span>
+            <div class="letras-text" id="txt-deposito" style="color:#7d3e00;"></div>
+            <div class="copy-btns">
+              <button class="btn-copy-num" onclick="copiar('num-deposito', this)" style="background:#b35a00;">🔢 Número</button>
+              <button class="btn-copy" onclick="copiar('txt-deposito', this)" style="background:#e67e22;">📋 Letras</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Valores de atados (crédito)</label>
+        <div class="input-wrap">
+          <span class="prefix">$</span>
+          <input type="text" id="atados" placeholder="0" oninput="formatAndCalc(this)" onfocus="onFocus(this)" onblur="onBlur(this)" />
+        </div>
+        <div class="letras-box" id="letras-atados">
+          <div class="letras-label">En letras</div>
+          <div class="letras-row">
+            <span style="display:none" id="num-atados"></span>
+            <div class="letras-text" id="txt-atados"></div>
+            <div class="copy-btns">
+              <button class="btn-copy-num" onclick="copiar('num-atados', this)">🔢 Número</button>
+              <button class="btn-copy" onclick="copiar('txt-atados', this)">📋 Letras</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Deuda (hipoteca / gravamen)</label>
+        <div class="input-wrap">
+          <span class="prefix">$</span>
+          <input type="text" id="deuda" placeholder="0" oninput="formatAndCalc(this)" onfocus="onFocus(this)" onblur="onBlur(this)" />
+        </div>
+        <div class="letras-box" id="letras-deuda">
+          <div class="letras-label">En letras</div>
+          <div class="letras-row">
+            <span style="display:none" id="num-deuda"></span>
+            <div class="letras-text" id="txt-deuda"></div>
+            <div class="copy-btns">
+              <button class="btn-copy-num" onclick="copiar('num-deuda', this)">🔢 Número</button>
+              <button class="btn-copy" onclick="copiar('txt-deuda', this)">📋 Letras</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Condiciones + Liquidación -->
+    <div class="col col-right">
+      <div class="section-label">Condiciones especiales</div>
+
+      <div class="toggle-field">
+        <div>
+          <div class="toggle-text">¿Patrimonio de familia con hijos menores?</div>
+          <div class="toggle-sub">Si aplica, las arras se eliminan por política</div>
+        </div>
+        <div class="toggle-switch">
+          <button id="pat-si" onclick="setCondicion('patrimonio', true)">SÍ</button>
+          <button id="pat-no" class="active-no" onclick="setCondicion('patrimonio', false)">NO</button>
+        </div>
+      </div>
+      <div class="condicion-aviso" id="aviso-patrimonio">
+        🚸 <strong>Patrimonio con hijos menores:</strong> Bajo ninguna excepción se pagan arras. Arras = <strong>$0</strong>.
+      </div>
+
+      <div class="toggle-field" id="toggle-mmUnaEscritura" style="display:none; background:#f0faf4; border-color:#27ae60;">
+        <div>
+          <div class="toggle-text" style="color:#1a6b3a;">¿Línea de negocio es MM Una sola escritura?</div>
+          <div class="toggle-sub">En esta línea sí se pagan arras aunque haya hijos menores</div>
+        </div>
+        <div class="toggle-switch">
+          <button id="mue-si" onclick="setCondicion('mmUnaEscritura', true)">SÍ</button>
+          <button id="mue-no" class="active-no" onclick="setCondicion('mmUnaEscritura', false)">NO</button>
+        </div>
+      </div>
+      <div class="condicion-aviso" id="aviso-mmUnaEscritura" style="background:#f0faf4; border-color:#27ae60; color:#1a6b3a; display:none;">
+        ✅ <strong>MM Una sola escritura:</strong> En esta línea de negocio sí se pagan arras aunque haya patrimonio con hijos menores.
+      </div>
+
+      <div class="toggle-field">
+        <div>
+          <div class="toggle-text">¿Riesgo de embargo?</div>
+          <div class="toggle-sub">Si aplica, las arras se eliminan por política</div>
+        </div>
+        <div class="toggle-switch">
+          <button id="emb-si" onclick="setCondicion('embargo', true)">SÍ</button>
+          <button id="emb-no" class="active-no" onclick="setCondicion('embargo', false)">NO</button>
+        </div>
+      </div>
+      <div class="condicion-aviso" id="aviso-embargo">
+        ⚖️ <strong>Riesgo de embargo:</strong> No se pagan arras por riesgo jurídico. Arras = <strong>$0</strong>.
+      </div>
+
+      <div class="toggle-field">
+        <div>
+          <div class="toggle-text">¿Es leasing?</div>
+          <div class="toggle-sub">Si aplica, las arras se eliminan por política</div>
+        </div>
+        <div class="toggle-switch">
+          <button id="lea-si" onclick="setCondicion('leasing', true)">SÍ</button>
+          <button id="lea-no" class="active-no" onclick="setCondicion('leasing', false)">NO</button>
+        </div>
+      </div>
+      <div class="condicion-aviso" id="aviso-leasing">
+        🏢 <strong>Leasing:</strong> No se pagan arras en operaciones de leasing. Arras = <strong>$0</strong>.
+      </div>
+
+      <div class="toggle-field">
+        <div>
+          <div class="toggle-text">¿Hipoteca con entidad no vigilada por la Superfinanciera?</div>
+          <div class="toggle-sub">Si aplica, se aplica descuento del 15% sobre el precio</div>
+        </div>
+        <div class="toggle-switch">
+          <button id="hip-si" onclick="setCondicion('hipoteca', true)">SÍ</button>
+          <button id="hip-no" class="active-no" onclick="setCondicion('hipoteca', false)">NO</button>
+        </div>
+      </div>
+      <div class="condicion-aviso" id="aviso-hipoteca" style="background:#fff7e6; border-color:#f39c12; color:#7d4a00;">
+        🏦 <strong>Hipoteca con entidad no vigilada:</strong> Se aplica un descuento del <strong>15%</strong> sobre el precio del inmueble.
+      </div>
+
+      <div class="section-label" style="margin-top:14px;">Liquidación</div>
+
+      <div class="result-row">
+        <div class="result-row-top">
+          <span class="rlabel">Precio del inmueble</span>
+          <span class="rvalue" id="r-precio">$ 0</span>
+        </div>
+      </div>
+
+      <div class="result-row" id="row-descuento15" style="display:none;">
+        <div class="result-row-top">
+          <span class="rlabel">– Descuento hipoteca no vigilada (15%)</span>
+          <span class="rvalue" style="color:#e67e22;" id="r-descuento15">– $ 0</span>
+        </div>
+        <div class="rletras" style="color:#a04000; opacity:0.85;" id="rl-descuento15"></div>
+      </div>
+
+      <div class="result-row">
+        <div class="result-row-top">
+          <span class="rlabel">– Arras</span>
+          <span class="rvalue deducted" id="r-arras">– $ 0</span>
+        </div>
+        <div class="rletras deducted" id="rl-arras" style="display:none;"></div>
+      </div>
+
+      <div class="result-row">
+        <div class="result-row-top">
+          <span class="rlabel">– Atados / crédito</span>
+          <span class="rvalue deducted" id="r-atados">– $ 0</span>
+        </div>
+        <div class="rletras deducted" id="rl-atados" style="display:none;"></div>
+      </div>
+
+      <div class="result-row">
+        <div class="result-row-top">
+          <span class="rlabel">– Deuda</span>
+          <span class="rvalue deducted" id="r-deuda">– $ 0</span>
+        </div>
+        <div class="rletras deducted" id="rl-deuda" style="display:none;"></div>
+      </div>
+
+      <div class="result-final">
+        <div class="result-final-top">
+          <span class="rlabel">Pago final al vendedor</span>
+          <span class="rvalue" id="r-final">$ 0</span>
+        </div>
+        <div class="letras-box show" id="letras-final" style="margin-top:8px; background:#6020b8; border-color:#9060e0; display:none;">
+          <div class="letras-label" style="color:#d9c4ff;">En letras</div>
+          <div class="letras-row">
+            <span style="display:none" id="num-final"></span>
+            <div class="letras-text" id="txt-final" style="color:#e8d8ff;"></div>
+            <div class="copy-btns">
+              <button class="btn-copy-num" onclick="copiar('num-final', this)" style="background:#3a0080;">🔢 Número</button>
+              <button class="btn-copy" onclick="copiar('txt-final', this)" style="background:#5010a0;">📋 Letras</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-danger" id="alert-rechazar" style="margin-top:8px;">
+          🚫 <strong>Negocio RECHAZADO</strong> — El pago final es inferior a $5.000.000 incluso sin arras.
+        </div>
+        <div class="alert alert-warning" id="alert-ajuste" style="margin-top:8px;">
+          ⚠️ <strong>Arras ajustadas a $0</strong> — Se eliminaron para garantizar el mínimo de $5.000.000.
+        </div>
+        <div class="alert alert-info" id="alert-ok" style="margin-top:8px;">
+          ✅ <strong>Negocio viable</strong> — El pago final supera el mínimo requerido.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Política de Negocios Inmobiliarios 2026 · Arras máx. 10% · Pago mínimo $5.000.000</footer>
+</div>
+
+<script>
+  let condiciones = { patrimonio: false, mmUnaEscritura: false, embargo: false, leasing: false, hipoteca: false };
+
+  const PREFIJOS = { patrimonio: 'pat', mmUnaEscritura: 'mue', embargo: 'emb', leasing: 'lea', hipoteca: 'hip' };
+
+  function setCondicion(tipo, val) {
+    condiciones[tipo] = val;
+    const p = PREFIJOS[tipo];
+    document.getElementById(p + '-si').className = val ? 'active-yes' : '';
+    document.getElementById(p + '-no').className = !val ? 'active-no' : '';
+
+    const aviso = document.getElementById('aviso-' + tipo);
+    // Avisos con estilos inline (hipoteca, mmUnaEscritura, leasing) usan display
+    const inlineAvisos = ['hipoteca', 'mmUnaEscritura', 'leasing'];
+    if (inlineAvisos.includes(tipo)) {
+      aviso.style.display = val ? 'block' : 'none';
+    } else {
+      aviso.className = 'condicion-aviso' + (val ? ' show' : '');
+    }
+
+    // Mostrar sub-toggle de MM una escritura solo cuando patrimonio = SÍ
+    if (tipo === 'patrimonio') {
+      document.getElementById('toggle-mmUnaEscritura').style.display = val ? 'flex' : 'none';
+      if (!val) {
+        condiciones.mmUnaEscritura = false;
+        document.getElementById('mue-si').className = '';
+        document.getElementById('mue-no').className = 'active-no';
+        document.getElementById('aviso-mmUnaEscritura').style.display = 'none';
+      }
+    }
+
+    calcular();
+  }
+
+  // Parsea formato colombiano: 152.429.411,49 → 152429411.49
+  function parseMoney(str) {
+    str = String(str).trim().replace(/[^0-9,.]/g, '');
+    const commaIdx = str.lastIndexOf(',');
+    const dotIdx   = str.lastIndexOf('.');
+    if (commaIdx > dotIdx) {
+      // coma = separador decimal (formato colombiano)
+      const intPart = str.substring(0, commaIdx).replace(/\./g, '');
+      const decPart = str.substring(commaIdx + 1);
+      return parseFloat(intPart + '.' + decPart) || 0;
+    } else {
+      // puntos = separadores de miles, sin decimal
+      return parseFloat(str.replace(/\./g, '')) || 0;
+    }
+  }
+
+  // Formato con 2 decimales reales: 152429411.49 → "152.429.411,49"
+  function fmtMoney(n) {
+    if (!n || n === 0) return '0,00';
+    return n.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Redondear a 2 decimales evitando errores de punto flotante
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  // Formatea mientras se escribe: mantiene la coma pero formatea la parte entera
+  function formatAndCalc(input) {
+    const val = input.value;
+    const commaIdx = val.lastIndexOf(',');
+    if (commaIdx === -1) {
+      const raw = parseFloat(val.replace(/\./g, '').replace(/[^0-9]/g, '')) || 0;
+      input.value = raw > 0 ? raw.toLocaleString('es-CO') : '';
+    } else {
+      const intStr = val.substring(0, commaIdx).replace(/\./g, '').replace(/[^0-9]/g, '');
+      const decStr = val.substring(commaIdx + 1).replace(/[^0-9]/g, '').substring(0, 2);
+      const intVal = parseInt(intStr, 10) || 0;
+      input.value = (intVal > 0 ? intVal.toLocaleString('es-CO') : '0') + ',' + decStr;
+    }
+    calcular();
+  }
+
+  function onFocus(input) { /* dejar al usuario editar libremente */ }
+
+  function onBlur(input) {
+    const raw = parseMoney(input.value);
+    input.value = raw > 0 ? fmtMoney(raw) : '';
+    calcular();
+  }
+
+  function numeroALetras(n) {
+    if (!n || n <= 0) return '';
+    const centavos = Math.round((n - Math.floor(n)) * 100);
+    n = Math.floor(n);
+
+    const hasta19 = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
+      'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+    const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS',
+                      'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+    function menor1000(n) {
+      if (n === 0) return '';
+      if (n < 20) return hasta19[n];
+      if (n === 20) return 'VEINTE';
+      if (n < 30) return 'VEINTI' + hasta19[n % 10];
+      if (n < 100) {
+        const d = Math.floor(n / 10), u = n % 10;
+        return decenas[d] + (u ? ' Y ' + hasta19[u] : '');
+      }
+      if (n === 100) return 'CIEN';
+      const c = Math.floor(n / 100), r = n % 100;
+      return centenas[c] + (r ? ' ' + menor1000(r) : '');
+    }
+
+    const milMill = Math.floor(n / 1000000000);
+    const mill    = Math.floor((n % 1000000000) / 1000000);
+    const mil     = Math.floor((n % 1000000) / 1000);
+    const resto   = n % 1000;
+
+    let partes = [];
+    let ultimoGrupo = 'unidades';
+
+    if (milMill > 0) { partes.push(menor1000(milMill) + ' MIL MILLONES'); ultimoGrupo = 'millones'; }
+    if (mill > 0)    { partes.push(mill === 1 ? 'UN MILLÓN' : menor1000(mill) + ' MILLONES'); ultimoGrupo = 'millones'; }
+    if (mil > 0)     { partes.push(mil === 1 ? 'MIL' : menor1000(mil) + ' MIL'); ultimoGrupo = 'mil'; }
+    if (resto > 0)   { partes.push(menor1000(resto)); ultimoGrupo = 'unidades'; }
+
+    const sufijo = ultimoGrupo === 'millones' ? 'DE PESOS' : 'PESOS';
+    let texto = partes.join(' ') + ' ' + sufijo;
+    if (centavos > 0) texto += ' CON ' + String(centavos).padStart(2, '0') + '/100';
+    texto += ' MONEDA CORRIENTE ($ ' + fmtMoney(n + centavos / 100) + ')';
+    return texto;
+  }
+
+  function setLetras(boxId, txtId, valor) {
+    const box = document.getElementById(boxId);
+    const txt = document.getElementById(txtId);
+    const numId = txtId.replace('txt-', 'num-');
+    const numEl = document.getElementById(numId);
+    if (valor > 0) {
+      txt.textContent = numeroALetras(valor);
+      if (numEl) numEl.textContent = fmtMoney(valor);
+      box.style.display = 'block';
+    } else {
+      box.style.display = 'none';
+    }
+  }
+
+  function setRLetras(rlId, valor) {
+    const el = document.getElementById(rlId);
+    if (valor > 0) {
+      el.textContent = numeroALetras(valor);
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function copiar(txtId, btn) {
+    const texto = document.getElementById(txtId).textContent;
+    if (!texto) return;
+
+    // Método compatible con sandbox: textarea temporal + execCommand
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+
+    const orig = btn.innerHTML;
+    btn.textContent = ok ? '✅ Copiado' : '⚠️ Selecciona y copia';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+  }
+
+  function calcular() {
+    const precio = parseMoney(document.getElementById('precio').value);
+    const atados = parseMoney(document.getElementById('atados').value);
+    const deuda  = parseMoney(document.getElementById('deuda').value);
+    const MINIMO = 5000000;
+
+    // Patrimonio con hijos menores NO elimina arras si la línea es MM Una sola escritura
+    const patrimonioSinArras = condiciones.patrimonio && !condiciones.mmUnaEscritura;
+    const sinArras = patrimonioSinArras || condiciones.embargo || condiciones.leasing;
+    const descuento15 = condiciones.hipoteca ? round2(precio * 0.15) : 0;
+    let arras = sinArras ? 0 : round2(precio * 0.10);
+    let pagoFinal = round2(precio - descuento15 - arras - atados - deuda);
+
+    let estado = 'ok';
+    let arrasAjustada = false;
+
+    if (!sinArras && arras > 0 && pagoFinal < MINIMO) {
+      arras = 0; arrasAjustada = true;
+      pagoFinal = round2(precio - descuento15 - atados - deuda);
+      estado = pagoFinal < MINIMO ? 'rechazar' : 'ajuste';
+    } else if (pagoFinal < MINIMO && precio > 0) {
+      estado = 'rechazar';
+    }
+
+    // Campo depósito (hipoteca no vigilada)
+    const fieldDeposito = document.getElementById('field-deposito');
+    fieldDeposito.style.display = condiciones.hipoteca ? 'block' : 'none';
+    document.getElementById('deposito').value = condiciones.hipoteca ? fmtMoney(descuento15) : '0';
+    setLetras('letras-deposito', 'txt-deposito', descuento15);
+
+    // Letras inputs
+    setLetras('letras-precio', 'txt-precio', precio);
+    setLetras('letras-arras',  'txt-arras',  arras);
+    setLetras('letras-atados', 'txt-atados', atados);
+    setLetras('letras-deuda',  'txt-deuda',  deuda);
+
+    // Campo arras
+    document.getElementById('arras').value = fmtMoney(arras);
+    document.getElementById('arras-ajustada-badge').style.display = arrasAjustada ? 'inline-block' : 'none';
+
+    // Liquidación
+    document.getElementById('r-precio').textContent = '$ ' + fmtMoney(precio);
+
+    // Descuento 15%
+    const rowDesc = document.getElementById('row-descuento15');
+    const rlDesc  = document.getElementById('rl-descuento15');
+    if (descuento15 > 0) {
+      rowDesc.style.display = 'block';
+      document.getElementById('r-descuento15').textContent = '– $ ' + fmtMoney(descuento15);
+      rlDesc.textContent = numeroALetras(descuento15);
+      rlDesc.style.display = 'block';
+    } else {
+      rowDesc.style.display = 'none';
+      rlDesc.style.display  = 'none';
+    }
+
+    document.getElementById('r-arras').textContent = arras > 0 ? '– $ ' + fmtMoney(arras) : '$ 0';
+    document.getElementById('r-arras').className   = 'rvalue ' + (arras > 0 ? 'deducted' : 'zero');
+    setRLetras('rl-arras', arras);
+
+    document.getElementById('r-atados').textContent = atados > 0 ? '– $ ' + fmtMoney(atados) : '$ 0';
+    document.getElementById('r-atados').className   = 'rvalue ' + (atados > 0 ? 'deducted' : 'zero');
+    setRLetras('rl-atados', atados);
+
+    document.getElementById('r-deuda').textContent = deuda > 0 ? '– $ ' + fmtMoney(deuda) : '$ 0';
+    document.getElementById('r-deuda').className   = 'rvalue ' + (deuda > 0 ? 'deducted' : 'zero');
+    setRLetras('rl-deuda', deuda);
+
+    document.getElementById('r-final').textContent = '$ ' + fmtMoney(pagoFinal);
+
+    const rfinal = document.getElementById('r-final');
+    rfinal.style.color = estado === 'rechazar' ? '#fca5a5' : estado === 'ajuste' ? '#fde68a' : '#e0c8ff';
+
+    // Letras pago final
+    const finalBox = document.getElementById('letras-final');
+    const finalTxt = document.getElementById('txt-final');
+    if (estado !== 'rechazar' && pagoFinal > 0) {
+      finalTxt.textContent = numeroALetras(pagoFinal);
+      const numFinal = document.getElementById('num-final');
+      if (numFinal) numFinal.textContent = fmtMoney(pagoFinal);
+      finalBox.style.display = 'block';
+    } else {
+      finalBox.style.display = 'none';
+    }
+
+    // Alertas (dentro del panel morado)
+    document.getElementById('alert-rechazar').className = 'alert alert-danger'  + (estado === 'rechazar' ? ' show' : '');
+    document.getElementById('alert-ajuste').className   = 'alert alert-warning' + (estado === 'ajuste'   ? ' show' : '');
+    document.getElementById('alert-ok').className       = 'alert alert-info'    + (estado === 'ok' && precio > 0 ? ' show' : '');
+  }
+
+  calcular();
+</script>
+</body>
+</html>
