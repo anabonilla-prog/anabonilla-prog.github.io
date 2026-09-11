@@ -546,6 +546,21 @@
           ✅ <strong>Negocio viable</strong> — El pago final supera el mínimo requerido.
         </div>
       </div>
+
+      <!-- División de pagos entre beneficiarios -->
+      <div id="seccion-beneficiarios" style="margin-top:18px;">
+        <div class="section-label">División de pagos</div>
+        <div style="display:flex; align-items:center; gap:10px; margin:8px 0 12px;">
+          <label style="color:#bbb; font-size:13px;">¿Cuántos beneficiarios hay?</label>
+          <input type="number" id="num-beneficiarios" min="1" max="10" value="1"
+            style="width:60px; padding:6px 8px; border-radius:6px; border:1px solid #5a3890; background:#1e0a50; color:#fff; text-align:center; font-size:14px;"
+            oninput="renderBeneficiarios(this.value)">
+        </div>
+        <div id="lista-beneficiarios"></div>
+        <div id="aviso-pct" style="display:none; color:#fde68a; font-size:12px; margin-top:6px; padding:6px 10px; background:#3a2500; border-radius:6px; border:1px solid #b45309;">
+          ⚠️ Los porcentajes suman <span id="total-pct">0</span>% — deben sumar exactamente 100%
+        </div>
+      </div>
     </div>
   </div>
 
@@ -815,6 +830,89 @@
     document.getElementById('alert-rechazar').className = 'alert alert-danger'  + (estado === 'rechazar' ? ' show' : '');
     document.getElementById('alert-ajuste').className   = 'alert alert-warning' + (estado === 'ajuste'   ? ' show' : '');
     document.getElementById('alert-ok').className       = 'alert alert-info'    + (estado === 'ok' && precio > 0 ? ' show' : '');
+
+    // División entre beneficiarios
+    actualizarBeneficiarios(arras, pagoFinal);
+  }
+
+  // ─── Beneficiarios ───────────────────────────────────────────────────────
+  function renderBeneficiarios(n) {
+    n = Math.max(1, Math.min(10, parseInt(n) || 1));
+    const lista = document.getElementById('lista-beneficiarios');
+    // Preserve existing pct values
+    const prevPcts = Array.from(lista.querySelectorAll('.pct-input')).map(i => i.value);
+    lista.innerHTML = '';
+    if (n <= 1) {
+      document.getElementById('aviso-pct').style.display = 'none';
+      calcular();
+      return;
+    }
+    for (let i = 0; i < n; i++) {
+      const div = document.createElement('div');
+      div.className = 'beneficiario-row';
+      div.style.cssText = 'background:#1e0a50; border:1px solid #5a3890; border-radius:8px; padding:10px 12px; margin-bottom:8px;';
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="color:#c9a0ff; font-size:13px; font-weight:600; min-width:100px;">Beneficiario ${i+1}</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="number" class="pct-input" min="0" max="100" step="0.01" placeholder="0"
+              value="${prevPcts[i] || ''}"
+              style="width:75px; padding:6px 8px; border-radius:6px; border:1px solid #7a4ac0; background:#2a0f70; color:#fff; text-align:center; font-size:15px; font-weight:700;"
+              oninput="calcular()">
+            <span style="color:#bbb; font-size:14px;">%</span>
+          </div>
+          <div class="ben-resultado" style="display:none; flex:1; min-width:220px; border-top:1px solid #3a1870; margin-top:8px; padding-top:8px;">
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+              <div>
+                <div style="color:#aaa; font-size:11px; margin-bottom:2px;">Arras</div>
+                <div style="color:#e0c8ff; font-size:14px; font-weight:700;" class="ben-arras">$ 0</div>
+                <div style="color:#c9a0ff; font-size:11px; margin-top:2px;" class="ben-arras-letras"></div>
+              </div>
+              <div>
+                <div style="color:#aaa; font-size:11px; margin-bottom:2px;">Pago final</div>
+                <div style="color:#a0ffc8; font-size:14px; font-weight:700;" class="ben-pago">$ 0</div>
+                <div style="color:#70d0a0; font-size:11px; margin-top:2px;" class="ben-pago-letras"></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      lista.appendChild(div);
+    }
+    calcular();
+  }
+
+  function actualizarBeneficiarios(arras, pagoFinal) {
+    const rows = document.querySelectorAll('.beneficiario-row');
+    if (rows.length === 0) return;
+    const pcts = Array.from(rows).map(r => parseFloat(r.querySelector('.pct-input').value) || 0);
+    const total = Math.round(pcts.reduce((a, b) => a + b, 0) * 100) / 100;
+    const avisoEl = document.getElementById('aviso-pct');
+    const totalEl = document.getElementById('total-pct');
+    if (Math.abs(total - 100) > 0.01 && total > 0) {
+      avisoEl.style.display = 'block';
+      totalEl.textContent = total.toLocaleString('es-CO', {maximumFractionDigits:2});
+    } else {
+      avisoEl.style.display = 'none';
+    }
+    rows.forEach((row, i) => {
+      const res = row.querySelector('.ben-resultado');
+      const pct = pcts[i];
+      if (pct > 0) {
+        const factor = pct / 100;
+        const montoArras = round2(arras * factor);
+        const montoPago = round2(pagoFinal * factor);
+        row.querySelector('.ben-arras').textContent = '$ ' + fmtMoney(montoArras);
+        row.querySelector('.ben-pago').textContent = '$ ' + fmtMoney(montoPago);
+        row.querySelector('.ben-arras-letras').textContent = montoArras > 0 ? numeroALetras(montoArras) : '–';
+        row.querySelector('.ben-pago-letras').textContent = montoPago > 0 ? numeroALetras(montoPago) : '–';
+        res.style.display = 'block';
+        res.style.marginTop = '8px';
+        res.style.paddingTop = '8px';
+        res.style.borderTop = '1px solid #3a1870';
+      } else {
+        res.style.display = 'none';
+      }
+    });
   }
 
   calcular();
